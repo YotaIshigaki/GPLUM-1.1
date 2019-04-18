@@ -140,7 +140,7 @@ public:
 
     void show(){
         const PS::S32 n_proc = PS::Comm::getNumberOfProc();
-        std::cout << id_in << "\t" << id_out << "\t" << id_cluster << "\t";
+        std::cout << PS::Comm::getRank() << "\t" << id_in << "\t" << id_out << "\t" << id_cluster << "\t";
         for ( PS::S32 i=0; i<n_proc; i++ ) std::cout << (checkFlag(i));
         std::cout << std::endl;
     }
@@ -218,6 +218,8 @@ public:
     
     PS::S32 getNumberOfRankSend() const { return send_rank_list.size(); }
     PS::S32 getNumberOfRankRecv() const { return recv_rank_list.size(); }
+    PS::S32 getNumberOfRankConnected() const { return connected_list.size(); }
+    PS::S32 getNumberOfPairConnected(const PS::S32 ii) const { return ex_data[connected_list.at(ii)].size(); }
 
     template <class Tpsys>
     void addNeighbor(Tpsys & pp,
@@ -227,7 +229,7 @@ public:
         n_list[i].push_back(j_id);
         pp[i].neighbor ++;
 
-        pp[i].id_cluster = std::min(pp[i].id_cluster, std::min(pp[i].id, j_id));
+        pp[i].id_cluster = std::min(pp[i].id_cluster, j_id);
 
         if ( j_rank != pp[i].myrank ) {
 #pragma omp critical
@@ -339,19 +341,21 @@ public:
 
     template <class Tpsys>
     bool exchangeExData(Tpsys & pp,
-                        PS::S32 TAG){
+                        PS::S32 TAG,
+                        PS::S32** & ex_data_send,
+                        PS::S32** & ex_data_recv){
         //const PS::S32 n_proc = PS::Comm::getNumberOfProc();
         const PS::S32 n_send = connected_list.size();
-        PS::S32 ** ex_data_send = new PS::S32*[n_send];
-        PS::S32 ** ex_data_recv = new PS::S32*[n_send];
+        //PS::S32 ** ex_data_send = new PS::S32*[n_send];
+        //PS::S32 ** ex_data_recv = new PS::S32*[n_send];
         
-        for ( PS::S32 ii=0; ii<n_send; ii++ ) {
-            PS::S32 i = connected_list.at(ii);
-            PS::S32 n_size = ex_data[i].size() * ExPair::getSize();
+        //for ( PS::S32 ii=0; ii<n_send; ii++ ) {
+        //    PS::S32 i = connected_list.at(ii);
+        //    PS::S32 n_size = ex_data[i].size() * ExPair::getSize();
             
-            ex_data_send[ii] = new PS::S32[n_size];
-            ex_data_recv[ii] = new PS::S32[n_size];
-        }
+        //    ex_data_send[ii] = new PS::S32[n_size];
+        //    ex_data_recv[ii] = new PS::S32[n_size];
+        //}
 #pragma omp parallel for
         for ( PS::S32 ii=0; ii<n_send; ii++ ) {
             PS::S32 i = connected_list.at(ii);
@@ -389,22 +393,28 @@ public:
                 jj += recv_pair.input(&ex_data_recv[ii][jj]);
 
                 std::pair<PS::S32,PS::S32> adr = ex_data_map.at(recv_pair.getPair());
+                assert ( adr.first == i );
                 assert ( recv_pair.getPair() == getExData(adr).getPair() );
-                check = check || getExData(adr).exchange(recv_pair);
+                bool check_1 = getExData(adr).exchange(recv_pair);
+                check = check || check_1;
 #pragma omp critical
                 {
-                    PS::S32 & id_cluster = pp[id_map.at(getExData(adr).getId())].id_cluster;
-                    id_cluster = std::min(id_cluster, getExData(adr).getIdCluster());
+                    //getExData(adr).show();
+                    PS::S32 i_loc = id_map.at(getExData(adr).getId());
+                    pp[i_loc].id_cluster = std::min(pp[i_loc].id_cluster, getExData(adr).getIdCluster());
                 }
             }
             
-            delete [] ex_data_send[ii];
-            delete [] ex_data_recv[ii];
+            //delete [] ex_data_send[ii];
+            //delete [] ex_data_recv[ii];
         }
-        delete [] ex_data_send;
-        delete [] ex_data_recv;
+        //delete [] ex_data_send;
+        //delete [] ex_data_recv;
 
-        return PS::Comm::synchronizeConditionalBranchOR(check);
+        //PS::Comm::barrier();
+        //bool check_glb = PS::Comm::synchronizeConditionalBranchOR(check);
+        
+        return check;
     }
 
     template <class Tpsys>
@@ -562,7 +572,7 @@ class ExParticleSystem {
                                 {
                                     n_ex_ptcl_send[jj] ++;
                                     n_ex_nei_send[jj] += pp[i].neighbor;
-                                    assert ( pp[i].neighbor == NList.n_list[i].size() );
+                                    assert ( pp[i].neighbor == (PS::S32)(NList.n_list[i].size()) );
                                     ex_ptcl_send_list[jj].push_back(i);
                                 }
                             }
@@ -729,7 +739,7 @@ class ExParticleSystem {
                 PS::S32 id_pre = pp[j].id;
                 
                 pp[j] = ex_ptcl_send.at(adr_ptcl + jj);
-                assert( pp[j].id == id_pre );
+                if (!pp[j].isDead) assert( pp[j].id == id_pre );
             }
         }
     }

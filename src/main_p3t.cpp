@@ -417,14 +417,33 @@ int main(int argc, char *argv[])
         NList.createConnectedRankList();
         NList.makeIdMap(system_grav);
 
+        PS::S32 n_send = NList.getNumberOfRankConnected();
+        PS::S32 ** ex_data_send = new PS::S32*[n_send];
+        PS::S32 ** ex_data_recv = new PS::S32*[n_send];
+        for ( PS::S32 ii=0; ii<n_send; ii++ ) {
+            PS::S32 n_size = NList.getNumberOfPairConnected(ii) * ExPair::getSize();            
+            ex_data_send[ii] = new PS::S32[n_size];
+            ex_data_recv[ii] = new PS::S32[n_size];
+        }
+
         bool check = true;
+        bool check_loc = true;
         PS::S32 TAG = 10;
         while ( check ) {
             NList.createNeighborCluster(system_grav);
             NList.inputExData(system_grav);
-            check = NList.exchangeExData(system_grav, TAG);
+            check_loc = NList.exchangeExData(system_grav, TAG, ex_data_send, ex_data_recv);
+            check = PS::Comm::synchronizeConditionalBranchOR(check_loc);
+            //PS::Comm::barrier();
             TAG ++ ;
         }
+        
+        for ( PS::S32 ii=0; ii<n_send; ii++ ) {          
+            delete [] ex_data_send[ii];
+            delete [] ex_data_recv[ii];
+        }
+        delete [] ex_data_send;
+        delete [] ex_data_recv;
 
         NList.selectSendRecvParticle(system_grav);
         
