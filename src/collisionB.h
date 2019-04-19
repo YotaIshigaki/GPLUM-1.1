@@ -1,46 +1,10 @@
 #pragma once
 
-template <class Tp>
-void setFragmentCircle(std::vector<Tp> & pfrag,
-                       PS::F64vec & masspos,
-                       PS::F64vec & massvel,
-                       std::vector<PS::F64> mass,
-                       PS::F64vec pos_g,
-                       PS::F64vec vel_g,
-                       PS::F64 x_frag,
-                       PS::F64 v_frag,
-                       PS::F64vec vec1,
-                       PS::F64vec vec2)
-{
-    PS::S32 n_frag = mass.size();
-    PS::F64vec e0 = vec1;
-    PS::F64vec e1 = vec2 - ((vec2*vec1)/(vec1*vec1))*vec1;
-    e0 = e0 / sqrt(e0*e0);
-    e1 = e1 / sqrt(e1*e1);
-
-    pfrag.clear();
-    PS::F64 theta0 = 2. * M_PI * drand48();
-    for ( PS::S32 i=0; i<n_frag; i++ ){
-        Tp new_frag;
-        new_frag.mass = mass[i];
-
-        PS::F64 theta = theta0 + 2.*M_PI*i/n_frag;
-        new_frag.pos = pos_g + x_frag * ( cos(theta)*e0 + sin(theta)*e1 );
-        new_frag.vel = vel_g + v_frag * ( cos(theta)*e0 + sin(theta)*e1 );
-
-        masspos += new_frag.mass * new_frag.pos;
-        massvel += new_frag.mass * new_frag.vel;
-        
-        pfrag.push_back(new_frag);
-    }
-
-}
-
 ///////////////////////////////////////
 /*     Fragmentation Model Class     */  
 ///////////////////////////////////////
 
-#ifndef CHAMBERS
+#if defined(KOMINAMI)
 
 // Ref J.D. Kominami et al. 2018 in preparation
 class Collision : public Collision0 {
@@ -118,7 +82,8 @@ inline PS::S32 Collision::collisionOutcome(std::vector<Tp> & pfrag)
     return n_frag;
 }
 
-#else
+
+#elif defined(CHAMBERS)
 
 // Ref J.E. Chambers 2013; S.T. Stewart & Z.M. Leinhardt 2012 
 class Collision : public Collision0 {
@@ -379,4 +344,12 @@ inline PS::S32 Collision::collisionOutcome(std::vector<Tp> & pfrag)
     
     return n_frag;
 }
+
+
+#else //PERFECT_ACCRETION
+
+class Collision : public Collision0 {
+
+};
+
 #endif

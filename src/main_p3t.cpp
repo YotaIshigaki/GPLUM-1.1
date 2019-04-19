@@ -56,7 +56,8 @@ PS::F64 FPGrav::dt_min    = pow2(-13);
 PS::F64 FPGrav::eta       = 0.01;
 PS::F64 FPGrav::eta_0     = 0.001;
 PS::F64 FPGrav::alpha2    = 0.01;
-PS::F64 FPGrav::rHill_min = 3.15557400894e-04;
+PS::F64 FPGrav::rHill_min = 0;
+PS::F64 FPGrav::rHill_max = 0;
 
 PS::F64 HardSystem::f = 1.;
 PS::F64 Collision0::f = 1.;
@@ -145,7 +146,8 @@ int main(int argc, char *argv[])
         default:
             std::cout << "Usage: "
                       <<  argv[0]
-                      << " [-p argment] [-r] [-i argment] [-s argment] [-e argment] [-o argment] [-D argment] [-R argment] arg1 ..." << std::endl;
+                      << " [-p argment] [-r] [-i argment] [-s argment] [-e argment] [-o argment] [-D argment] [-R argment] arg1 ..."
+                      << std::endl;
             break;
         }
     }
@@ -325,16 +327,21 @@ int main(int argc, char *argv[])
     //////////////////
     std::ofstream fout_eng;
     std::ofstream fout_col;
+    std::ofstream fout_rem;
     char sout_eng[256];
     char sout_col[256];
-    sprintf(sout_eng, "%s/energy.dat", dir_name);
+    char sout_rem[256];
+    sprintf(sout_eng, "%s/energy.dat",    dir_name);
     sprintf(sout_col, "%s/collision.dat", dir_name);
+    sprintf(sout_rem, "%s/remove.dat",    dir_name);
     if ( time_sys == 0. ) {
         fout_eng.open(sout_eng, std::ios::out);
         fout_col.open(sout_col, std::ios::out);
+        fout_rem.open(sout_rem, std::ios::out);
     } else {
         fout_eng.open(sout_eng, std::ios::app);
         fout_col.open(sout_col, std::ios::app);
+        fout_rem.open(sout_rem, std::ios::app);
     }
     PS::Comm::barrier();
     showParameter(init_file, dir_name, makeInit,
@@ -502,8 +509,8 @@ int main(int argc, char *argv[])
 #endif
         if( time_sys+FPGrav::dt_tree  == dt_snap*isnap ){
             n_largestcluster = system_hard.getNumberOfParticleInLargestClusterGlobal();
-            n_cluster = system_hard.getNumberOfClusterGlobal();
-            n_isoparticle = system_hard.getNumberOfIsolatedParticleGlobal();
+            n_cluster        = system_hard.getNumberOfClusterGlobal();
+            n_isoparticle    = system_hard.getNumberOfIsolatedParticleGlobal();
         }
 
 #ifdef CALC_WTIME
@@ -610,7 +617,7 @@ int main(int argc, char *argv[])
                 system_grav.exchangeParticle(dinfo);
                 
                 // Remove Particle Out Of Boundary
-                removeOutOfBoundaryParticle(system_grav, e_now.edisp, r_max, r_min);
+                removeOutOfBoundaryParticle(system_grav, e_now.edisp, r_max, r_min, fout_rem);
             }
                 
             // Reset Number Of Particles
@@ -719,6 +726,7 @@ int main(int argc, char *argv[])
     
     fout_eng.close();
     fout_col.close();
+    fout_rem.close();
     
     PS::Comm::barrier();
 

@@ -234,6 +234,9 @@ PS::S32 readParameter(const char * param_file,
 
         } else if ( name == "rHill_min" ){
             FPGrav::rHill_min = getvalue(value, L_MKS, L_CGS);
+
+        } else if ( name == "rHill_max" ){
+            FPGrav::rHill_max = getvalue(value, L_MKS, L_CGS);
             
         } else if ( name == "r_max" ){
             r_max = getvalue(value, L_MKS, L_CGS);
@@ -271,6 +274,10 @@ PS::S32 readParameter(const char * param_file,
         return 1;
     } else if ( makeInit && SolidDisk::n_init == 0 && SolidDisk::m_init == 0. ){
         std::cerr << "Both n_init and m_init are unset." << std::endl;
+        return 1;
+    } else if ( FPGrav::rHill_min > FPGrav::rHill_max && FPGrav::rHill_max > 0 ){
+        std::cerr << "rHill_max is smaller than rHill_min. (rHill_max = " << FPGrav::rHill_max
+                  << ", rHill_min = " << FPGrav::rHill_min << ")" << std::endl;
         return 1;
     }
 
@@ -355,6 +362,7 @@ void showParameter(char * init_file,
                   << "R_search1     = " << EPGrav::R_search1 << std::endl
                   << "gamma         = " << EPGrav::gamma << std::endl
                   << std::scientific << std::setprecision(15)
+                  << "rHill_max     = " << FPGrav::rHill_max << "\t(" << FPGrav::rHill_max*L << " cm)"<< std::endl
                   << "rHill_min     = " << FPGrav::rHill_min << "\t(" << FPGrav::rHill_min*L << " cm)"<< std::endl
                   << std::fixed << std::setprecision(5)
                   << "r_max         = " << r_max << std::endl
@@ -456,6 +464,7 @@ void showParameter(char * init_file,
                    << "R_search1     = " << EPGrav::R_search1 << std::endl
                    << "gamma         = " << EPGrav::gamma << std::endl
                    << std::scientific << std::setprecision(15)
+                   << "rHill_max     = " << FPGrav::rHill_max << "\t(" << FPGrav::rHill_max*L << " cm)"<< std::endl
                    << "rHill_min     = " << FPGrav::rHill_min << "\t(" << FPGrav::rHill_min*L << " cm)"<< std::endl
                    << std::fixed << std::setprecision(5)
                    << "r_max         = " << r_max << std::endl

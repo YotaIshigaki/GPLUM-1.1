@@ -154,7 +154,8 @@ template <class Tpsys>
 void removeOutOfBoundaryParticle(Tpsys & pp,
                                  PS::F64 & edisp,
                                  const PS::F64 r_max,
-                                 const PS::F64 r_min)
+                                 const PS::F64 r_min,
+                                 std::ofstream & fout_rem)
 {
     PS::F64 rmax2 = r_max*r_max;
     PS::F64 rmin2 = r_min*r_min;
@@ -170,6 +171,8 @@ void removeOutOfBoundaryParticle(Tpsys & pp,
         if ( pos2 > rmax2 || pos2 < rmin2 ){
 #pragma omp critical
             {
+                if ( pos2 > rmax2 ) rmax2 = pos2;
+                if ( pos2 < rmin2 ) rmin2 = pos2;
                 i_remove = i;
             }
         }
@@ -183,9 +186,13 @@ void removeOutOfBoundaryParticle(Tpsys & pp,
         edisp_loc -= massi * pp[i_remove].phi_d;
         edisp_loc -= massi * pp[i_remove].phi;
 
-        pp.removeParticle(&i_remove, 1);
         std::cout << "Remove Particle " << i_remove << std::endl
                   << "Position : " << std::setprecision(15) << pp[i_remove].pos << std::endl;
+        fout_rem << pp[i_remove].time << "\t" << pp[i_remove].id << "\t" << pp[i_remove].mass << "\t"
+                 << pp[i_remove].pos.x << "\t" << pp[i_remove].pos.y << "\t" << pp[i_remove].pos.z << "\t"
+                 << pp[i_remove].vel.x << "\t" << pp[i_remove].vel.y << "\t" << pp[i_remove].vel.z
+                 << std::endl;
+        pp.removeParticle(&i_remove, 1);
     }
     edisp += PS::Comm::getSum(edisp_loc);
 }

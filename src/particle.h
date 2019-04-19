@@ -119,6 +119,7 @@ class FPGrav : public EPGrav {
     
     PS::F64 r_planet;
     static PS::F64 rHill_min;
+    static PS::F64 rHill_max;
 
     PS::S32 id_cluster;
     PS::S32 neighbor;
@@ -526,7 +527,12 @@ void setCutoffRadii(Tpsys & pp)
     PS::F64 v_kep_loc = 0.;
 #pragma omp parallel for
     for(PS::S32 i=0; i<n_loc; i++){
-        PS::F64 rHill = std::max(pp[i].getRHill(), FPGrav::rHill_min);
+        PS::F64 rHill = 0;
+        if ( FPGrav::rHill_max <= 0 ) {
+            rHill = std::max(pp[i].getRHill(), FPGrav::rHill_min);
+        } else {
+            rHill = std::min(FPGrav::rHill_max, std::max(pp[i].getRHill(), FPGrav::rHill_min));
+        }
 #ifndef ISOTROPIC
         PS::F64 v_kep = pp[i].getKeplerVelocity();
 #endif

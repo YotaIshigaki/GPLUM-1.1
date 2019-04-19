@@ -15,8 +15,8 @@ output_dir      = TEST                  # output directory name
 Restart         = 0
 
 # FOR INITIAL CONDITION OF SOLID DISK
-makeInit        = 1                     # flag as to whether initial condition is created in program
-n_init          = 100000                 # number of initial particle
+makeInit        = 0                     # flag as to whether initial condition is created in program
+n_init          = 100000                # number of initial particle
 m_init          = 2.e22CGS              # mass of initial particle
 p               = 1.5                   # power of column density distribution of solid disk
 f_dust          = 0.71                  # scaling factor of column density distribution
@@ -63,6 +63,7 @@ R_cut           = 3.0                   # parameter to determine cut-off radius
 R_search0       = 3.0                   # parameter to determine search radius
 R_search1       = 5.0                   # parameter to determine search radius
 gamma           = 0.5                   # outer to inner cut-off radius ratio
+rHill_max       = 0.                    # maximum Hill radius to decide cut-off radius
 rHill_min       = 3.15557400894e-04     # minimum Hill radius to decide cut-off radius
 r_max           = 20.                   # maximum distance of particle from central star 
 r_min           = 0.1                   # minimum distance of particle from central star 
